@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Valentino – Die große Countdown-Seite</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    min-height: 100vh;
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    background: linear-gradient(135deg, #fff7d6, #dff7ff 45%, #f4ddff);
+    color: #202030;
+    display: flex;
+    justify-content: center;
+    padding: 35px 18px;
+  }
+  .container { width: min(1050px, 100%); }
+  header { text-align: center; margin-bottom: 30px; }
+  .emoji { font-size: 4rem; }
+  h1 { margin: 5px 0; font-size: clamp(2rem, 5vw, 3.8rem); }
+  .subtitle { font-size: 1.15rem; opacity: .75; }
+  .countdowns {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 24px;
+  }
+  .card {
+    background: rgba(255,255,255,.88);
+    border: 3px solid rgba(255,255,255,.95);
+    border-radius: 28px;
+    padding: 28px;
+    box-shadow: 0 15px 45px rgba(50,40,80,.13);
+    text-align: center;
+  }
+  .card.school { background: rgba(250, 244, 255, .92); }
+  .card h2 { margin: 0 0 8px; font-size: clamp(1.35rem, 3vw, 2rem); }
+  .date { font-weight: 700; margin-bottom: 22px; opacity: .7; }
+  .timer {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 9px;
+  }
+  .unit {
+    background: #202030;
+    color: white;
+    border-radius: 16px;
+    padding: 15px 6px 11px;
+  }
+  .number {
+    display: block;
+    font-size: clamp(1.7rem, 5vw, 2.7rem);
+    font-weight: 800;
+    line-height: 1;
+  }
+  .label {
+    display: block;
+    margin-top: 7px;
+    font-size: .72rem;
+    text-transform: uppercase;
+    letter-spacing: .08em;
+    opacity: .7;
+  }
+  .message {
+    margin-top: 22px;
+    font-size: 1.05rem;
+    font-weight: 700;
+  }
+  .progress-wrap {
+    margin-top: 24px;
+    background: #eeeef3;
+    height: 10px;
+    border-radius: 99px;
+    overflow: hidden;
+  }
+  .progress {
+    height: 100%;
+    width: 0%;
+    border-radius: 99px;
+    transition: width .5s ease;
+    background: linear-gradient(90deg, #ff9f43, #ff5e8a);
+  }
+  .school .progress { background: linear-gradient(90deg, #7c5cff, #3ec5ff); }
+  footer {
+    text-align: center;
+    margin-top: 28px;
+    opacity: .7;
+    font-size: .95rem;
+  }
+  .gone {
+    font-size: 1.5rem;
+    font-weight: 800;
+    padding: 20px 0;
+  }
+  @media (max-width: 720px) {
+    .countdowns { grid-template-columns: 1fr; }
+    .card { padding: 22px 14px; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <div class="emoji">🎒🦖🍭</div>
+    <h1>Valentinos großer Countdown</h1>
+    <div class="subtitle">Vom Kindergarten-Abenteuer zur Schulhelden-Karriere 🚀</div>
+  </header>
+
+  <main class="countdowns">
+    <section class="card" id="kindergartenCard">
+      <h2>🧸 Letzter Kindergartentag</h2>
+      <div class="date">06.08.2027 · 13:00 Uhr</div>
+      <div class="timer" id="kindergartenTimer"></div>
+      <div class="message" id="kindergartenMessage">
+        Noch so lange darf gespielt werden! 😎
+      </div>
+      <div class="progress-wrap"><div class="progress" id="kindergartenProgress"></div></div>
+    </section>
+
+    <section class="card school" id="schoolCard">
+      <h2>🎓 Erster Schultag</h2>
+      <div class="date">14.09.2027 · 08:00 Uhr</div>
+      <div class="timer" id="schoolTimer"></div>
+      <div class="message" id="schoolMessage">
+        Die Schultüte rückt näher! 📚😱
+      </div>
+      <div class="progress-wrap"><div class="progress" id="schoolProgress"></div></div>
+    </section>
+  </main>
+
+  <footer>
+    Made with ❤️ für Valentino · Und ja: Die Erwachsenen dürfen beim Countdown mitfiebern. 😄
+  </footer>
+</div>
+
+<script>
+const targets = {
+  kindergarten: new Date("2027-08-06T13:00:00"),
+  school: new Date("2027-09-14T08:00:00")
+};
+
+function parts(ms) {
+  const totalSeconds = Math.max(0, Math.floor(ms / 1000));
+  return {
+    days: Math.floor(totalSeconds / 86400),
+    hours: Math.floor((totalSeconds % 86400) / 3600),
+    minutes: Math.floor((totalSeconds % 3600) / 60),
+    seconds: totalSeconds % 60
+  };
+}
+
+function timerHTML(p) {
+  return `
+    <div class="unit"><span class="number">${p.days}</span><span class="label">Tage</span></div>
+    <div class="unit"><span class="number">${String(p.hours).padStart(2,'0')}</span><span class="label">Stunden</span></div>
+    <div class="unit"><span class="number">${String(p.minutes).padStart(2,'0')}</span><span class="label">Minuten</span></div>
+    <div class="unit"><span class="number">${String(p.seconds).padStart(2,'0')}</span><span class="label">Sekunden</span></div>
+  `;
+}
+
+function update() {
+  const now = new Date();
+
+  updateOne(
+    "kindergarten",
+    now,
+    "kindergartenTimer",
+    "kindergartenMessage",
+    "kindergartenProgress",
+    "🎉 DER KINDERGARTEN IST GESCHICHTE! 🎉",
+    "Noch so lange darf gespielt werden! 😎"
+  );
+
+  updateOne(
+    "school",
+    now,
+    "schoolTimer",
+    "schoolMessage",
+    "schoolProgress",
+    "🎒 SCHULANFANG! AB IN DIE SCHULE! 🎒",
+    "Die Schultüte rückt näher! 📚😱"
+  );
+}
+
+function updateOne(key, now, timerId, messageId, progressId, doneText, normalText) {
+  const target = targets[key];
+  const diff = target - now;
+  const timer = document.getElementById(timerId);
+  const message = document.getElementById(messageId);
+
+  if (diff <= 0) {
+    timer.innerHTML = `<div class="gone" style="grid-column:1/-1">${doneText}</div>`;
+    message.textContent = "Mission erfüllt! 🚀";
+    document.getElementById(progressId).style.width = "100%";
+    return;
+  }
+
+  timer.innerHTML = timerHTML(parts(diff));
+  message.textContent = normalText;
+
+  // Nur eine kleine Visualisierung des Fortschritts bis zum jeweiligen Ereignis.
+  const start = key === "kindergarten"
+    ? new Date("2026-09-25T14:00:00")
+    : new Date("2026-09-25T14:00:00");
+  const total = target - start;
+  const elapsed = now - start;
+  const percent = Math.min(100, Math.max(0, elapsed / total * 100));
+  document.getElementById(progressId).style.width = percent + "%";
+}
+
+update();
+setInterval(update, 1000);
+</script>
+</body>
+</html>
